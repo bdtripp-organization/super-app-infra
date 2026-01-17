@@ -1,0 +1,61 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main, develop]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+      service: [service-auth, service-orders, service-ui]
+    steps:
+     - uses: actions/checkout@v4
+     - name: Log in to Registry
+       run: echo "${{ secrets.REGISTRY_PASSWORD }}" | docker login -u "${{ secrets.REGISTRY_USERNAME }}" registry.hub.docker.com
+
+     - name: Build and Push
+       run: |
+        docker build -t my-registry/${{ matrix.service }}:${{ github.sha }} ./${{matrix.service }}
+        docker push my-registry/${{ matrix.service }}:${{ github.sha }}
+
+  deploy-dev:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/develop'
+    environment: development
+    runs-on: ubuntu-latest
+    steps:
+    
+     - name: Copy docker-compose.yml to server
+       uses: appleboy/scp-action@v0.1.7
+       with:
+         host: ${{ secrets.DEV_HOST }}
+         username: ${{ secrets.USERNAME }}
+         key: ${{ secrets.SSH_PRIVATE_KEY }}
+         source: "docker-compose.yaml"
+         target: "/srv/my-app/"
+         strip_components: 0  # Places the file directly in the target folder
+         
+     - name: Pull images and compose up
+       uses: appleboy/ssh-action@master
+       with:
+        host: ${{ secrets.DEV_HOST }}
+        script: |
+         export TAG=${{ github.sha }}
+         cd /srv/my-app/
+         docker compose pull && docker compose up -d
+
+# left off here. Need to compare with what is set for the dev environment and basically set it the same here except make it for production
+  deploy-prod:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+     - uses: appleboy/ssh-action@master # Deployment via SSH to remote server
+       with:
+        host: ${{ secrets.PROD_HOST }}
+        script: |
+         export TAG=${{ github.sha }}
+         docker compose pull && docker compose up -d
