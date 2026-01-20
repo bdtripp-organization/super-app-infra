@@ -1,5 +1,9 @@
+on:
+  workflow_dispatch: # Allows manual trigger from the UI
+  workflow_call:     # Still allows calling from other workflows
+
 deploy-dev:
-  needs: build-and-push
+  # needs: build-and-push
   if: github.ref == 'refs/heads/develop'
   environment: development
   runs-on: ubuntu-latest
@@ -9,10 +13,10 @@ deploy-dev:
       uses: appleboy/scp-action@v0.1.7
       with:
         host: ${{ secrets.DEV_HOST }}
-        username: ${{ secrets.USERNAME }}
+        username: ${{ secrets.VPS_DEV_USERNAME }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "docker-compose.yaml"
-        target: "/srv/my-test-projects/"
+        source: "docker-compose.yaml,nginx.conf"
+        target: "/srv/dev/my-test-projects/"
         strip_components: 0  # Places the file directly in the target folder
         
     - name: Pull images and compose up
@@ -21,12 +25,12 @@ deploy-dev:
       host: ${{ secrets.DEV_HOST }}
       script: |
         export TAG=${{ github.sha }}
-        cd /srv/my-test-projects/
+        cd /srv/dev/my-test-projects/
         docker compose pull && docker compose up -d
 
 deploy-prod:
-  needs: build-and-push
-  if: github.ref == 'refs/heads/main'
+  # needs: build-and-push
+  if: github.ref == 'refs/heads/master'
   environment: production
   runs-on: ubuntu-latest
   steps:
@@ -35,10 +39,10 @@ deploy-prod:
       uses: appleboy/scp-action@v0.1.7
       with:
       host: ${{ secrets.PROD_HOST }}
-      username: ${{ secrets.USERNAME }}
+      username: ${{ secrets.VPS_PROD_USERNAME }}
       key: ${{ secrets.SSH_PRIVATE_KEY }}
-      source: "docker-compose.yaml"
-      target: "/srv/my-test-projects/"
+      source: "docker-compose.yaml,nginx.conf"
+      target: "/srv/prod/my-test-projects/"
       strip_components: 0  # Places the file directly in the target folder
 
     - name: Pull images and compose up
@@ -47,5 +51,5 @@ deploy-prod:
       host: ${{ secrets.PROD_HOST }}
       script: |
         export TAG=${{ github.sha }}
-        cd /srv/my-test-projects/
+        cd /srv/prod/my-test-projects/
         docker compose pull && docker compose up -d
