@@ -51,6 +51,6 @@ jobs:
         with:
           host: ${{ secrets.PROD_HOST }}
           script: |
-          export TAG=${{ github.sha }}
-          cd /srv/prod/my-test-projects/
-          docker compose pull && docker compose up -d
+            export TAG=${{ github.sha }}
+            cd /srv/prod/my-test-projects/
+            docker compose pull && docker compose up -d
