@@ -51,8 +51,8 @@ jobs:
           context: .
           file: ${{ inputs.dockerfile_path }}
           push: true
-          tags: ${{ id.meta.outputs.tags }}
-          labels: ${{ id.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           # 2026 Best Practice: Enable GitHub Actions cache to speed up builds
           cache-from: type=gha
           cache-to: type=gha,mode=max
