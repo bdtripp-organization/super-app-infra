@@ -39,18 +39,18 @@ jobs:
       - name: Copy docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
-        host: ${{ secrets.PROD_HOST }}
-        username: ${{ secrets.VPS_PROD_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "docker-compose.yaml,nginx.conf"
-        target: "/srv/prod/my-test-projects/"
-        strip_components: 0  # Places the file directly in the target folder
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.VPS_PROD_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yaml,nginx.conf"
+          target: "/srv/prod/my-test-projects/"
+          strip_components: 0  # Places the file directly in the target folder
 
       - name: Pull images and compose up
         uses: appleboy/ssh-action@master # Deployment via SSH to remote server
         with:
-        host: ${{ secrets.PROD_HOST }}
-        script: |
+          host: ${{ secrets.PROD_HOST }}
+          script: |
           export TAG=${{ github.sha }}
           cd /srv/prod/my-test-projects/
           docker compose pull && docker compose up -d
