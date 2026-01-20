@@ -23,11 +23,11 @@ jobs:
       - name: Pull images and compose up
         uses: appleboy/ssh-action@master
         with:
-        host: ${{ secrets.DEV_HOST }}
-        script: |
-          export TAG=${{ github.sha }}
-          cd /srv/dev/my-test-projects/
-          docker compose pull && docker compose up -d
+          host: ${{ secrets.DEV_HOST }}
+          script: |
+            export TAG=${{ github.sha }}
+            cd /srv/dev/my-test-projects/
+            docker compose pull && docker compose up -d
 
   deploy-prod:
     # needs: build-and-push
