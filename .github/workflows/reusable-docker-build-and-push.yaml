@@ -47,7 +47,7 @@ jobs:
             type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/development' }}
             # The branch + short SHA combined
             type=raw,value=prod-{{sha}},enable=${{ github.ref == 'refs/heads/master' }}
-            type=raw,value=dev-{{sha}},enable=${{ github.ref != 'refs/heads/development' }}
+            type=raw,value=dev-{{sha}},enable=${{ github.ref == 'refs/heads/development' }}
 
       - name: Build and Push
         uses: docker/build-push-action@v5
