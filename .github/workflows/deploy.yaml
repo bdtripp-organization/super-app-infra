@@ -5,7 +5,7 @@ on:
 jobs: 
   deploy-dev:
     # needs: build-and-push
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/development'
     environment: development
     runs-on: ubuntu-latest
     steps:
