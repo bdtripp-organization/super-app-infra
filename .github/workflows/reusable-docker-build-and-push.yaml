@@ -42,12 +42,13 @@ jobs:
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ inputs.image_name }}
           # Automatically tags with 'latest' and the git commit SHA
           tags: |
-            # The commit hash
-            type=raw,value=latest
+            # The branch + latest tag
+            type=raw,value=prod-latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/development' }}
             type=sha,format=long
-            # add env tag based on branch
-            type=raw,value=prod,enable=${{ github.ref == 'refs/heads/master' }}
-            type=raw,value=dev,enable=${{ github.ref == 'refs/heads/development' }}
+            # The branch + short SHA combined
+            type=raw,value=prod-{{sha}},enable=${{ github.ref == 'refs/heads/master' }}
+            type=raw,value=dev-{{sha}},enable=${{ github.ref != 'refs/heads/development' }}
 
       - name: Build and Push
         uses: docker/build-push-action@v5
