@@ -45,7 +45,6 @@ jobs:
             # The branch + latest tag
             type=raw,value=prod-latest,enable=${{ github.ref == 'refs/heads/master' }}
             type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/development' }}
-            type=sha,format=long
             # The branch + short SHA combined
             type=raw,value=prod-{{sha}},enable=${{ github.ref == 'refs/heads/master' }}
             type=raw,value=dev-{{sha}},enable=${{ github.ref != 'refs/heads/development' }}
