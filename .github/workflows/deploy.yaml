@@ -54,3 +54,5 @@ jobs:
             export TAG=${{ github.sha }}
             cd /srv/prod/my-test-projects/
             docker compose pull && docker compose up -d
+
+#some comment to change
