@@ -1,58 +1,72 @@
 on:
   workflow_dispatch: # Allows manual trigger from the UI
-  workflow_call:     # Still allows calling from other workflows
-
-jobs: 
-  deploy-dev:
+  workflow_call: # Still allows calling from other workflows
+jobs:
+  deploy-dev or prod:
     # needs: build-and-push
-    if: github.ref == 'refs/heads/development'
-    environment: development
     runs-on: ubuntu-latest
-    steps:
-    
-      - name: Copy docker-compose.yml to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEV_HOST }}
-          username: ${{ secrets.VPS_DEV_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yaml,nginx.conf"
-          target: "/srv/dev/my-test-projects/"
-          strip_components: 0  # Places the file directly in the target folder
-          
-      - name: Pull images and compose up
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.DEV_HOST }}
-          script: |
-            export TAG=${{ github.sha }}
-            cd /srv/dev/my-test-projects/
-            docker compose pull && docker compose up -d
-
-  deploy-prod:
-    # needs: build-and-push
-    if: github.ref == 'refs/heads/master'
-    environment: production
-    runs-on: ubuntu-latest
-    steps:
-
-      - name: Copy docker-compose.yml to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.PROD_HOST }}
-          username: ${{ secrets.VPS_PROD_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yaml,nginx.conf"
-          target: "/srv/prod/my-test-projects/"
-          strip_components: 0  # Places the file directly in the target folder
-
-      - name: Pull images and compose up
-        uses: appleboy/ssh-action@master # Deployment via SSH to remote server
-        with:
-          host: ${{ secrets.PROD_HOST }}
-          script: |
-            export TAG=${{ github.sha }}
-            cd /srv/prod/my-test-projects/
-            docker compose pull && docker compose up -d
-
-#some comment to change
+  steps:
+    - uses: actions/checkout@v4
+    - name: Determine Deployment Target
+      run: |
+      # 1. Get the Short SHA
+        SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+        REPO_NAME="${{ github.event.repository.name }}"
+      # 2. Logic for Prod vs Dev
+        if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
+          echo "ENV_NAME=prod" >> $GITHUB_ENV
+          echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
+          echo "DB_PASS=${{ secrets.PROD_DB_PASSWORD }}" >> $GITHUB_ENV
+          echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
+          echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
+        else
+          echo "ENV_NAME=dev" >> $GITHUB_ENV
+          echo "SUBDOMAIN=dev.bdtripp.com" >> $GITHUB_ENV
+          echo "DB_PASS=${{ secrets.DEV_DB_PASSWORD }}" >> $GITHUB_ENV
+          echo "TARGET_HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
+          echo "TARGET_USER=${{ secrets.VPS_DEV_USERNAME }}" >> $GITHUB_ENV
+        fi
+      # 3. Set derived variables
+      # Note: Use the local variables just defined above
+        echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+        echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
+        echo "SECRET_DIR="${APP_DIR}/secrets"
+    - name: Set Derived Paths
+      run: |
+        echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
+        echo "APP_DIR=/srv/${{ env.ENV_NAME }}/apps/my-test-projects/${{ env.REPO_NAME }}" >> $GITHUB_ENV
+    - name: Copy docker-compose.yml to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        # Dynamically set based on the branch
+        host: ${{ env.TARGET_HOST }}
+        username: ${{ env.TARGET_USER }}
+        # Static because you use the same key for both
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "docker-compose.yml"
+        target: "${{ env.APP_DIR }}/"
+        # strip_components: 0 # Places the file directly in the target folder
+    - name: Deploy via SSH - pull images and compose up
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.TARGET_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        # Pass the GitHub Env variables into the remote script
+        envs: ENV_NAME,SUBDOMAIN,DB_PASS,TAG,PROJECT_NAME,REPO_NAME,APP_DIR
+        script: |
+          set -e  # Stop script on first error
+          echo "Deploying $PROJECT_NAME to $ENV_NAME environment…"
+          echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
+          # Create Directories and the secret file
+          SECRET_DIR="${APP_DIR}/secrets"
+          mkdir -p "$SECRET_DIR"
+          echo "$DB_PASS" > "${SECRET_DIR}/${PROJECT_NAME}_db_password"
+          chmod 600 "${SECRET_DIR}/${PROJECT_NAME}_db_password"
+          # Pull and Up
+          cd "$APP_DIR"
+          docker compose -p ${PROJECT_NAME} pull
+          docker compose -p ${PROJECT_NAME} up -d
+          # CLEANUP: Remove old images to save disk space
+          echo "Cleaning up old Docker images..."
+          docker image prune -af --filter "until=72h"
