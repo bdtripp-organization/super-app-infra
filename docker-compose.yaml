@@ -10,31 +10,40 @@ services:
       - vhost:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /srv/nginx-proxy/conf.d:/etc/nginx/conf.d:ro 
     restart: always
-    networks:
+    networks: # joins nginx-proxy to these networks
       - dev_public
       - prod_public
-  ssl-companion:
-    image: nginxproxy/acme-companion:latest
-    container_name: nginx-proxy-ssl
-    volumes_from:
-      - nginx-proxy
-    volumes:
-      - acme:/etc/acme.sh
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    environment:
-      - DEFAULT_EMAIL=your-email@bdtripp.com
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
     restart: always
-    networks:
-      - dev_public
-      - prod_public
-  deunhealth:
-    image: qoomon/docker-hostmanager:latest
-    container_name: deunhealth
+    command: --no-update
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    environment: # need to come back and set these variables, may not need all of these
+      WATCHTOWER_NOTIFICATIONS: email
+      WATCHTOWER_NOTIFICATION_EMAIL_FROM: ${DEFAULT_EMAIL}
+      WATCHTOWER_NOTIFICATION_EMAIL_TO: ${DEFAULT_EMAIL}
+      WATCHTOWER_NOTIFICATION_EMAIL_SERVER: smtp.gmail.com
+      WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PORT: 587
+      WATCHTOWER_NOTIFICATION_EMAIL_SERVER_USER: ${DEFAULT_EMAIL}
+      WATCHTOWER_NOTIFICATION_EMAIL_SERVER_PASSWORD: ${WATCHTOWER_SMTP_PASSWORD}
+  deunhealth:
+    image: qmcgaw/deunhealth
+    container_name: deunhealth
     restart: always
-networks:
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      LOG_LEVEL: info
+      HEALTHCHECK_INTERVAL: 30s
+      HEALTHCHECK_TIMEOUT: 10s
+      HEALTHCHECK_START_PERIOD: 30s
+      HEALTHCHECK_RETRIES: 3
+networks: # external key imports other containers from these networks (dev_public and prod_public) so
+          # that containers within this docker-compose file can communicate with them
   dev_public:
     name: dev_public
     external: true # Best to create these manually once: docker network create dev_public
