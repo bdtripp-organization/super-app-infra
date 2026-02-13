@@ -9,18 +9,18 @@ jobs:
       - uses: actions/checkout@v4
       - name: Determine Deployment Target
         run: |
-        # 1. Get the Short SHA
-          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-          REPO_NAME="${{ github.event.repository.name }}"
-        # 2. Set variables
-          echo "ENV_NAME=prod" >> $GITHUB_ENV
-          echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
-          echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
-          echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
-        # 3. Set derived variables
-        # Note: Use the local variables just defined above
-          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
-          echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
+          # 1. Get the Short SHA
+            SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+            REPO_NAME="${{ github.event.repository.name }}"
+          # 2. Set variables
+            echo "ENV_NAME=prod" >> $GITHUB_ENV
+            echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
+            echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
+            echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
+          # 3. Set derived variables
+          # Note: Use the local variables just defined above
+            echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+            echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
       - name: Set Derived Paths
         run: |
           echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
@@ -44,14 +44,14 @@ jobs:
           # Pass the GitHub Env variables into the remote script
           envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME
           script: |
-          # This comment is here to fix indentation error
-            set -e  # Stop script on first error
-            echo "Deploying $PROJECT_NAME to $ENV_NAME environment…"
-            echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
-          # Pull and Up
-            cd /srv/global-proxy/
-            docker compose -p ${PROJECT_NAME} pull
-            docker compose -p ${PROJECT_NAME} up -d
-          # CLEANUP: Remove old images to save disk space
-            echo "Cleaning up old Docker images..."
-            docker image prune -af --filter "until=72h"
+            # This comment is here to fix indentation error
+              set -e  # Stop script on first error
+              echo "Deploying $PROJECT_NAME to $ENV_NAME environment…"
+              echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
+            # Pull and Up
+              cd /srv/global-proxy/
+              docker compose -p ${PROJECT_NAME} pull
+              docker compose -p ${PROJECT_NAME} up -d
+            # CLEANUP: Remove old images to save disk space
+              echo "Cleaning up old Docker images..."
+              docker image prune -af --filter "until=72h"
