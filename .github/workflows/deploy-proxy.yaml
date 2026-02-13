@@ -5,53 +5,53 @@ jobs:
   deploy-reverse-proxy:
     # needs: build-and-push
     runs-on: ubuntu-latest
-  steps:
-    - uses: actions/checkout@v4
-    - name: Determine Deployment Target
-      run: |
-      # 1. Get the Short SHA
-        SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
-        REPO_NAME="${{ github.event.repository.name }}"
-      # 2. Set variables
-        echo "ENV_NAME=prod" >> $GITHUB_ENV
-        echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
-        echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
-        echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
-      # 3. Set derived variables
-      # Note: Use the local variables just defined above
-        echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
-        echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
-    - name: Set Derived Paths
-      run: |
-        echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
-    - name: Copy docker-compose.yml to server
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        # Dynamically set based on the branch
-        host: ${{ env.TARGET_HOST }}
-        username: ${{ env.TARGET_USER }}
-        # Static because you use the same key for both
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        source: "docker-compose.yaml"
-        target: "/srv/global-proxy/"
-        # strip_components: 0 # Places the file directly in the target folder
-    - name: Deploy via SSH - pull images and compose up
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ env.TARGET_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        # Pass the GitHub Env variables into the remote script
-        envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME
-        script: |
-        # This comment is here to fix indentation error
-          set -e  # Stop script on first error
-          echo "Deploying $PROJECT_NAME to $ENV_NAME environment…"
-          echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
-        # Pull and Up
-          cd /srv/global-proxy/
-          docker compose -p ${PROJECT_NAME} pull
-          docker compose -p ${PROJECT_NAME} up -d
-        # CLEANUP: Remove old images to save disk space
-          echo "Cleaning up old Docker images..."
-          docker image prune -af --filter "until=72h"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Determine Deployment Target
+        run: |
+        # 1. Get the Short SHA
+          SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          REPO_NAME="${{ github.event.repository.name }}"
+        # 2. Set variables
+          echo "ENV_NAME=prod" >> $GITHUB_ENV
+          echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
+          echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
+          echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
+        # 3. Set derived variables
+        # Note: Use the local variables just defined above
+          echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
+          echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
+      - name: Set Derived Paths
+        run: |
+          echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
+      - name: Copy docker-compose.yml to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          # Dynamically set based on the branch
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ env.TARGET_USER }}
+          # Static because you use the same key for both
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.yaml"
+          target: "/srv/global-proxy/"
+          # strip_components: 0 # Places the file directly in the target folder
+      - name: Deploy via SSH - pull images and compose up
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Pass the GitHub Env variables into the remote script
+          envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME
+          script: |
+          # This comment is here to fix indentation error
+            set -e  # Stop script on first error
+            echo "Deploying $PROJECT_NAME to $ENV_NAME environment…"
+            echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
+          # Pull and Up
+            cd /srv/global-proxy/
+            docker compose -p ${PROJECT_NAME} pull
+            docker compose -p ${PROJECT_NAME} up -d
+          # CLEANUP: Remove old images to save disk space
+            echo "Cleaning up old Docker images..."
+            docker image prune -af --filter "until=72h"
