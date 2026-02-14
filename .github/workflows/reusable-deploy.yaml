@@ -41,6 +41,7 @@ jobs:
           username: ${{ env.TARGET_USER }}
           # Static because you use the same key for both
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "docker-compose.yaml"
           target: "${{ env.APP_DIR }}/"
           # strip_components: 0 # Places the file directly in the target folder
@@ -50,6 +51,7 @@ jobs:
           host: ${{ env.TARGET_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
           # Pass the GitHub Env variables into the remote script
           envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME,APP_DIR
           script: |
