@@ -15,8 +15,6 @@ jobs:
           # 2. Set variables
             echo "ENV_NAME=prod" >> $GITHUB_ENV
             echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
-            echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
-            echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
           # 3. Set derived variables
           # Note: Use the local variables just defined above
             echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
@@ -27,10 +25,8 @@ jobs:
       - name: Copy docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
-          # Dynamically set based on the branch
-          host: ${{ env.TARGET_HOST }}
-          username: ${{ env.TARGET_USER }}
-          # Static because you use the same key for both
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.VPS_PROD_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 65002
@@ -40,8 +36,8 @@ jobs:
       - name: Deploy via SSH - pull images and compose up
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ env.TARGET_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.VPS_PROD_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 65002

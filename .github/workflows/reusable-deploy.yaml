@@ -50,7 +50,7 @@ jobs:
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ env.TARGET_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
+          username: ${{ env.TARGET_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 65002
