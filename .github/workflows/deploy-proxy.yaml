@@ -33,6 +33,7 @@ jobs:
           # Static because you use the same key for both
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: 65002
           source: "docker-compose.yaml"
           target: "/srv/global-proxy/"
           # strip_components: 0 # Places the file directly in the target folder
@@ -43,6 +44,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: 65002
           # Pass the GitHub Env variables into the remote script
           envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME
           script: |
