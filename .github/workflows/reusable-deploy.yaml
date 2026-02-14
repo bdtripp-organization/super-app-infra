@@ -32,7 +32,7 @@ jobs:
         run: |
           echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
           echo "APP_DIR=/srv/${{ env.ENV_NAME }}/apps/my-test-projects/${{ env.REPO_NAME }}" >> $GITHUB_ENV
-          echo "SECRET_DIR="${APP_DIR}/secrets" >> $GITHUB_ENV
+          echo "SECRET_DIR=${APP_DIR}/secrets" >> $GITHUB_ENV
       - name: Copy docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
