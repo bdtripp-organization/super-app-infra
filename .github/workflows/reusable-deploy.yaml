@@ -31,12 +31,26 @@ jobs:
       - name: Set Derived Paths
         run: |
           echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
-          echo "APP_DIR=/srv/${{ env.ENV_NAME }}/apps/my-test-projects/${{ env.REPO_NAME }}" >> $GITHUB_ENV
+          echo "APP_DIR=/srv/projects/${{ env.REPO_NAME }}/${{ env.ENV_NAME }}" >> $GITHUB_ENV
       - name: Debug key presence
         run: |
           echo "Key length: ${#SSH_PRIVATE_KEY}"
         env:
           SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      # - name: Create directory structure via SSH
+      #   uses: appleboy/ssh-action@v1.0.3
+      #   with:
+      #     host: ${{ env.TARGET_HOST }}
+      #     username: ${{ env.TARGET_USER }}
+      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
+      #     passphrase: ${{ secrets.SSH_PASSPHRASE }}
+      #     port: 65002
+      #     # Pass the GitHub Env variables into the remote script
+      #     envs: APP_DIR
+      #     script: |
+      #       set -e
+      #       echo "Ensuring directory exists: $APP_DIR"
+      #       mkdir -p "$APP_DIR"
       - name: Copy docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
