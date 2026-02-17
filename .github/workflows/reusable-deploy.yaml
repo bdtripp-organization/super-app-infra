@@ -14,18 +14,19 @@ jobs:
             REPO_NAME="${{ github.event.repository.name }}"
           # 2. Logic for Prod vs Dev
             if [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
-              echo "ENV_NAME=prod" >> $GITHUB_ENV
+              ENV_NAME="prod"
               echo "SUBDOMAIN=bdtripp.com" >> $GITHUB_ENV
               echo "TARGET_HOST=${{ secrets.PROD_HOST }}" >> $GITHUB_ENV
               echo "TARGET_USER=${{ secrets.VPS_PROD_USERNAME }}" >> $GITHUB_ENV
             else
-              echo "ENV_NAME=dev" >> $GITHUB_ENV
+              ENV_NAME="dev"
               echo "SUBDOMAIN=dev.bdtripp.com" >> $GITHUB_ENV
               echo "TARGET_HOST=${{ secrets.DEV_HOST }}" >> $GITHUB_ENV
               echo "TARGET_USER=${{ secrets.VPS_DEV_USERNAME }}" >> $GITHUB_ENV
             fi
           # 3. Set derived variables
           # Note: Use the local variables just defined above
+            echo "ENV_NAME=${ENV_NAME}" >> $GITHUB_ENV
             echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
             echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
       - name: Set Derived Paths
