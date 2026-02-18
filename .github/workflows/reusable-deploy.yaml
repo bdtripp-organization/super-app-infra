@@ -82,8 +82,23 @@ jobs:
               echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
             # Pull and Up
               cd "$APP_DIR"
-              docker compose -p ${PROJECT_NAME} pull
+              for i in {1..5}; do
+                echo "Attempt $i to pull:"
+                if docker compose -p ${PROJECT_NAME} pull; then
+                  echo "Pull succeeded"
+                  break;
+                elif [ $i -eq 5 ]; then
+                  echo "All 5 attempts have failed. Exiting."
+                  exit 1;
+                else
+                  echo "Pull failed, retrying in 10 seconds..."
+                  sleep 10
+              done
               docker compose -p ${PROJECT_NAME} up -d
             # CLEANUP: Remove old images to save disk space
               echo "Cleaning up old Docker images..."
               docker image prune -af --filter "until=72h" 
+
+              # for i in {1..5}; do 
+              #   docker pull btripp365/my-test-app1:dev-15e3f46 && break || sleep 10; 
+              # done 
