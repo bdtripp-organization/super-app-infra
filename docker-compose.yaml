@@ -21,7 +21,6 @@ services:
     image: nickfedor/watchtower
     container_name: watchtower
     restart: always
-    command: --no-update
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
