@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Determine Deployment Target
+      - name: Prepare Deploment Environment Variables
         run: |
           # 1. Get the Short SHA
             SHORT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
@@ -19,6 +19,9 @@ jobs:
           # Note: Use the local variables just defined above
             echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
             echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
+          # 4. Set variables for Watchtower
+            echo "DEFAULT_EMAIL=${{ secrets.DEFAULT_EMAIL }}" >> $GITHUB_ENV
+            echo "WATCHTOWER_SMTP_PASSWORD=${{ secrets.WATCHTOWER_SMTP_PASSWORD }}" >> $GITHUB_ENV
       - name: Set Derived Paths
         run: |
           echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
@@ -42,7 +45,13 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 65002
           # Pass the GitHub Env variables into the remote script
-          envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME
+          envs: ENV_NAME,
+                SUBDOMAIN,
+                TAG,
+                PROJECT_NAME,
+                REPO_NAME,
+                DEFAULT_EMAIL,
+                WATCHTOWER_SMTP_PASSWORD
           script: |
             # This comment is here to fix indentation error
               set -e  # Stop script on first error
