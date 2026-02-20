@@ -29,29 +29,34 @@ jobs:
             echo "ENV_NAME=${ENV_NAME}" >> $GITHUB_ENV
             echo "REPO_NAME=$REPO_NAME" >> $GITHUB_ENV
             echo "TAG=${ENV_NAME}-${SHORT_SHA}" >> $GITHUB_ENV
-      - name: Set Derived Paths
+      - name: Set Project Name and Paths
         run: |
           echo "PROJECT_NAME=${{ env.ENV_NAME }}-${{ env.REPO_NAME }}" >> $GITHUB_ENV
-          echo "APP_DIR=/srv/projects/${{ env.REPO_NAME }}/${{ env.ENV_NAME }}" >> $GITHUB_ENV
-      - name: Debug key presence
-        run: |
-          echo "Key length: ${#SSH_PRIVATE_KEY}"
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      # - name: Create directory structure via SSH
-      #   uses: appleboy/ssh-action@v1.0.3
-      #   with:
-      #     host: ${{ env.TARGET_HOST }}
-      #     username: ${{ env.TARGET_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     passphrase: ${{ secrets.SSH_PASSPHRASE }}
-      #     port: 65002
-      #     # Pass the GitHub Env variables into the remote script
-      #     envs: APP_DIR
-      #     script: |
-      #       set -e
-      #       echo "Ensuring directory exists: $APP_DIR"
-      #       mkdir -p "$APP_DIR"
+          echo "REPO_PATH=/srv/projects/${{ env.REPO_NAME }}" >> $GITHUB_ENV
+          echo "BRANCH_PATH=/srv/projects/${{ env.REPO_NAME }}/${{ env.ENV_NAME }}" >> $GITHUB_ENV
+      # - name: Debug key presence
+      #   run: |
+      #     echo "Key length: ${#SSH_PRIVATE_KEY}"
+      #   env:
+      #     SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: Create directory structure via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ env.TARGET_HOST }}
+          username: ${{ env.TARGET_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: 65002
+          # Pass the GitHub Env variables into the remote script
+          envs: REPO_PATH, BRANCH_PATH, TARGET_USER
+          script: |
+            set -e
+            echo "Ensuring directory exists: $REPO_PATH"
+            mkdir -p "$REPO_PATH"
+            echo "Ensuring directory exists: $BRANCH_PATH"
+            mkdir -p "$BRANCH_PATH"
+            chown -R "$TARGET_USER":"$TARGET_USER" "$BRANCH_PATH"
+            chmod 700 "$BRANCH_PATH" 
       - name: Copy docker-compose.yml to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -63,7 +68,7 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 65002
           source: "docker-compose.yaml"
-          target: "${{ env.APP_DIR }}/"
+          target: "${{ env.BRANCH_PATH }}/"
           # strip_components: 0 # Places the file directly in the target folder
       - name: Deploy via SSH - pull images and compose up
         uses: appleboy/ssh-action@v1.0.3
@@ -74,14 +79,14 @@ jobs:
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           port: 65002
           # Pass the GitHub Env variables into the remote script
-          envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME,APP_DIR
+          envs: ENV_NAME,SUBDOMAIN,TAG,PROJECT_NAME,REPO_NAME,BRANCH_PATH
           script: |
             # This comment is here to fix indentation error
               set -e  # Stop script on first error
               echo "Deploying $PROJECT_NAME to $ENV_NAME environment…"
               echo "for $REPO_NAME using $SUBDOMAIN and $TAG"
             # Pull and Up
-              cd "$APP_DIR"
+              cd "$BRANCH_PATH"
               for i in {1..5}; do
                 echo "Attempt $i to pull:"
                 if docker compose -p ${PROJECT_NAME} pull; then
