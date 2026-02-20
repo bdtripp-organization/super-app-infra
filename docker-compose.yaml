@@ -1,28 +1,29 @@
 services:
   nginx-proxy:
     image: nginxproxy/nginx-proxy:latest
+    environment:
+      TRUST_DOWNSTREAM_PROXY: "true"
     container_name: nginx-proxy
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - certs:/etc/nginx/certs:ro
+      - /etc/nginx/certs:/etc/nginx/certs:ro
       - vhost:/etc/nginx/vhost.d
       - html:/usr/share/nginx/html
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      - /srv/nginx-proxy/conf.d:/etc/nginx/conf.d 
+      # - /srv/nginx-proxy/conf.d:/etc/nginx/conf.d 
     restart: always
     networks: # joins nginx-proxy to these networks
       - dev_public
       - prod_public
   watchtower:
-    image: containrrr/watchtower
+    image: nickfedor/watchtower
     container_name: watchtower
     restart: always
-    command: --no-update
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    environment: # need to come back and set these variables, may not need all of these
+    environment:
       WATCHTOWER_NOTIFICATIONS: email
       WATCHTOWER_NOTIFICATION_EMAIL_FROM: ${DEFAULT_EMAIL}
       WATCHTOWER_NOTIFICATION_EMAIL_TO: ${DEFAULT_EMAIL}
